@@ -3,7 +3,7 @@ import cors from "cors";
 import knex from "knex";
 
 import { handleSignUp } from "./controllers/signUp.js";
-import { handleLogin } from "./controllers/login.js";
+import { signInAuthentication } from "./controllers/login.js";
 
 const db = knex({
   client: "pg",
@@ -21,7 +21,7 @@ app.post("/signup", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  handleLogin(req, res, db);
+  signInAuthentication(req, res, db);
 });
 
 app.listen(port, () => {
