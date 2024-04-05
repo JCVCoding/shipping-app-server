@@ -8,39 +8,47 @@ client.on("error", (err) => console.log("Redis Client Error", err));
 
 await client.connect();
 
-const jwt_secret = "jwtshippingapp";
-const jwt_expiration = "10 seconds";
+const jwt_access_secret = process.env.ACCESS_TOKEN_SECRET;
+const jwt_refresh_secret = process.env.REFRESH_TOKEN_SECRET;
+const jwt_access_expiration = "10m";
+const jwt_refresh_expiration = "1d";
 
 // Create a session for the user
-const createSession = async (user) => {
-  const { userID } = user;
-  console.log(userID);
+const createSession = async (user, res) => {
   //   generate new access token
-  let token = jwt.sign({ uid: userID }, jwt_secret, {
-    expiresIn: jwt_expiration,
+  let accessToken = jwt.sign({ username: user }, jwt_access_secret, {
+    expiresIn: jwt_access_expiration,
   });
-  //   set token in redis
-  await client.set(token, userID).catch(console.log);
+  // generate new refresh token
+  let refreshToken = jwt.sign({ username: user }, jwt_refresh_secret, {
+    expiresIn: jwt_refresh_expiration,
+  });
+  res.cookie("jwt", refreshToken, {
+    httpOnly: true,
+    sameSite: "None",
+    secure: true,
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+  //   set access token in redis
+  await client.set(accessToken, user).catch(console.log);
 
-  return token;
+  return accessToken;
 };
 
-const getToken = async (req, res) => {
+const authenticateToken = async (req, res) => {
   const { authorization } = req.headers;
-  console.log(authorization);
-  await client.get(authorization, (err, reply) => {
-    if (err || !reply) {
-      return res.status(401).send("Unauthorized");
-    }
-  });
+  const response = await client.get(authorization);
+  if (!response) {
+    return res.status(401).send("Unauthorized");
+  }
+  return res.status(200).send("Authorized");
 };
 
 const handleLogin = async (req, res, db) => {
   const { username, password } = req.body;
-  console.log(req.body);
 
   const userData = await db
-    .select("username", "email", "password", "userID")
+    .select("username", "email", "password")
     .from("users")
     .where("username", "=", username)
     .orWhere("email", "=", username);
@@ -48,7 +56,7 @@ const handleLogin = async (req, res, db) => {
   if (userData.length) {
     const isValidPassword = bcrypt.compareSync(password, userData[0].password);
     if (isValidPassword) {
-      return userData;
+      return userData[0];
     } else {
       res.status(401).send({ code: 2, message: "Password is incorrect" });
     }
@@ -60,14 +68,13 @@ const handleLogin = async (req, res, db) => {
 export const signInAuthentication = (req, res, db) => {
   const { authorization } = req.headers;
   authorization
-    ? getToken(req, res)
+    ? authenticateToken(req, res)
     : handleLogin(req, res, db)
-        .then(async (data) => {
-          let userData = data[0];
-          if (userData) {
-            const sessionToken = await createSession(userData);
-            await res.json({ token: sessionToken });
-          }
-        })
+        .then((data) => data.username)
+        .then((userData) =>
+          createSession(userData, res).then((token) => {
+            res.json({ token: token, user: userData });
+          })
+        )
         .catch(() => console.error);
 };

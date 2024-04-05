@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import knex from "knex";
+import "dotenv/config";
 
 import { handleSignUp } from "./controllers/signUp.js";
 import { signInAuthentication } from "./controllers/login.js";
