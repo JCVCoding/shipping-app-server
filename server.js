@@ -5,7 +5,8 @@ import "dotenv/config";
 
 import { handleSignUp } from "./controllers/signUp.js";
 import { signInAuthentication } from "./controllers/login.js";
-import { handleLogout } from "./controllers/logout.js";
+import { getAccount } from "./controllers/account.js";
+import { getAccountAddress } from "./controllers/address.js";
 
 import { createClient } from "redis";
 
@@ -34,8 +35,16 @@ app.post("/login", (req, res) => {
   signInAuthentication(req, res, db, client);
 });
 
-app.post("/logout", (req, res) => {
-  handleLogout(req, res, client);
+app.get("/account/:username", (req, res) => {
+  getAccount(req, res, db);
+});
+
+app.post("/account/:accountNumber", (req, res) => {
+  editAccount(req, res, db);
+});
+
+app.get("/address/:accountNumber", (req, res) => {
+  getAccountAddress(req, res, db);
 });
 
 app.listen(port, () => {

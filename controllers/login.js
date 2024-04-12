@@ -28,7 +28,7 @@ const createSession = async (user, res, client) => {
   return accessToken;
 };
 
-const authenticateToken = async (req, res, client) => {
+export const authenticateToken = async (req, res, client) => {
   const { authorization } = req.headers;
   const response = await client.get(authorization);
   if (!response) {
@@ -51,10 +51,10 @@ const handleLogin = async (req, res, db) => {
     if (isValidPassword) {
       return userData[0];
     } else {
-      res.status(401).send({ code: 2, message: "Password is incorrect" });
+      res.status(401).send("2");
     }
   } else {
-    res.status(401).send({ code: 1, message: "Username or email not found" });
+    res.status(401).send("1");
   }
 };
 
@@ -66,13 +66,14 @@ export const signInAuthentication = (req, res, db, client) => {
     ? authenticateToken(req, res, client)
     : handleLogin(req, res, db)
         .then(
-          (data) => data.username
+          (data) => data
         ) /* Returns the username that we will use to sign the token with */
-        .then((username) =>
+        .then(({ username, email }) =>
           createSession(username, res, client).then((token) => {
             res.json({
               token: token,
               user: username,
+              email: email,
             }); /* Sends the token and username to the client */
           })
         )

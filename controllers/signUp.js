@@ -13,7 +13,8 @@ export const handleSignUp = async (req, res, db) => {
       joined: new Date(),
     })
     .into("users")
-    .catch((err) => {
+    .then(res.status(200).json("User created"))
+    .catch(() => {
       res.status(400).json("Error inserting into users table");
     });
 };
