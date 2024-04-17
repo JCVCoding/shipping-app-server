@@ -7,6 +7,7 @@ import { handleSignUp } from "./controllers/signUp.js";
 import { signInAuthentication } from "./controllers/login.js";
 import { getAccount } from "./controllers/account.js";
 import { getAccountAddress } from "./controllers/address.js";
+import { handleShip } from "./controllers/ship.js";
 
 import { createClient } from "redis";
 
@@ -45,6 +46,10 @@ app.post("/account/:accountNumber", (req, res) => {
 
 app.get("/address/:accountNumber", (req, res) => {
   getAccountAddress(req, res, db);
+});
+
+app.post("/ship", (req, res) => {
+  handleShip(req, res, db);
 });
 
 app.listen(port, () => {
