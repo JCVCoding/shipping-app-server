@@ -24,3 +24,19 @@ export const handleShip = async (req, res, db) => {
     res.status(400).json("Error inserting into shipments table");
   }
 };
+
+export const getShipments = async (req, res, db) => {
+  const { accountNumber } = req.params;
+  try {
+    const getShipmentData = await db
+      .select("*")
+      .from("shipments")
+      .where("accountNumber", "=", accountNumber);
+    res.send(getShipmentData);
+    return;
+  } catch (err) {
+    console.log(err);
+    res.status(400).json("Error getting shipments");
+    return;
+  }
+};
